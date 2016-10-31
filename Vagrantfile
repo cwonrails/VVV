@@ -48,26 +48,6 @@ Vagrant.configure("2") do |config|
     v.name = File.basename(vvv_pwd)
   end
 
-  # Configuration options for the Parallels provider.
-  config.vm.provider :parallels do |v|
-    v.update_guest_tools = true
-    v.customize ["set", :id, "--longer-battery-life", "off"]
-    v.memory = 1024
-    v.cpus = 1
-  end
-
-  # Configuration options for the VMware Fusion provider.
-  config.vm.provider :vmware_fusion do |v|
-    v.vmx["memsize"] = "1024"
-    v.vmx["numvcpus"] = "1"
-  end
-
-  # Configuration options for Hyper-V provider.
-  config.vm.provider :hyperv do |v, override|
-    v.memory = 1024
-    v.cpus = 1
-  end
-
   # SSH Agent Forwarding
   #
   # Enable agent forwarding on vagrant ssh commands. This allows you to use ssh keys
@@ -77,29 +57,9 @@ Vagrant.configure("2") do |config|
   # Default Ubuntu Box
   #
   # This box is provided by Ubuntu vagrantcloud.com and is a nicely sized (332MB)
-  # box containing the Ubuntu 14.04 Trusty 64 bit release. Once this box is downloaded
+  # box containing the Ubuntu 16.04 Xenial 64 bit release. Once this box is downloaded
   # to your host computer, it is cached for future use under the specified box name.
-  config.vm.box = "ubuntu/trusty64"
-
-  # The Parallels Provider uses a different naming scheme.
-  config.vm.provider :parallels do |v, override|
-    override.vm.box = "parallels/ubuntu-14.04"
-  end
-
-  # The VMware Fusion Provider uses a different naming scheme.
-  config.vm.provider :vmware_fusion do |v, override|
-    override.vm.box = "netsensia/ubuntu-trusty64"
-  end
-
-  # VMWare Workstation can use the same package as Fusion
-  config.vm.provider :vmware_workstation do |v, override|
-    override.vm.box = "netsensia/ubuntu-trusty64"
-  end
-
-  # Hyper-V uses a different base box.
-  config.vm.provider :hyperv do |v, override|
-    override.vm.box = "ericmann/trusty64"
-  end
+  config.vm.box = "ubuntu/xenial64"
 
   config.vm.hostname = "vvv"
 
@@ -149,10 +109,6 @@ Vagrant.configure("2") do |config|
   # Vagrant machines, different subnets should be used for each.
   #
   config.vm.network :private_network, id: "vvv_primary", ip: "192.168.50.4"
-
-  config.vm.provider :hyperv do |v, override|
-    override.vm.network :private_network, id: "vvv_primary", ip: nil
-  end
 
   # Public Network (disabled)
   #
@@ -207,13 +163,6 @@ Vagrant.configure("2") do |config|
     else
       config.vm.synced_folder "database/data/", "/var/lib/mysql", :extra => 'dmode=777,fmode=777'
     end
-
-    # The Parallels Provider does not understand "dmode"/"fmode" in the "mount_options" as
-    # those are specific to Virtualbox. The folder is therefore overridden with one that
-    # uses corresponding Parallels mount options.
-    config.vm.provider :parallels do |v, override|
-      override.vm.synced_folder "database/data/", "/var/lib/mysql", :mount_options => []
-    end
   end
 
   # /srv/config/
@@ -254,38 +203,6 @@ Vagrant.configure("2") do |config|
   config.vm.provision "fix-no-tty", type: "shell" do |s|
     s.privileged = false
     s.inline = "sudo sed -i '/tty/!s/mesg n/tty -s \\&\\& mesg n/' /root/.profile"
-  end
-
-  # The Parallels Provider does not understand "dmode"/"fmode" in the "mount_options" as
-  # those are specific to Virtualbox. The folder is therefore overridden with one that
-  # uses corresponding Parallels mount options.
-  config.vm.provider :parallels do |v, override|
-    override.vm.synced_folder "www/", "/srv/www/", :owner => "www-data", :mount_options => []
-
-    vvv_config['sites'].each do |site, args|
-      if args['local_dir'] != File.join(vagrant_dir, 'www', site) then
-        override.vm.synced_folder args['local_dir'], args['vm_dir'], :owner => "www-data", :mount_options => []
-      end
-    end
-  end
-
-  # The Hyper-V Provider does not understand "dmode"/"fmode" in the "mount_options" as
-  # those are specific to Virtualbox. Furthermore, the normal shared folders need to be
-  # replaced with SMB shares. Here we switch all the shared folders to us SMB and then
-  # override the www folder with options that make it Hyper-V compatible.
-  config.vm.provider :hyperv do |v, override|
-    override.vm.synced_folder "www/", "/srv/www/", :owner => "www-data", :mount_options => ["dir_mode=0775","file_mode=0774","forceuid","noperm","nobrl","mfsymlinks"]
-    vvv_config['sites'].each do |site, args|
-      if args['local_dir'] != File.join(vagrant_dir, 'www', site) then
-        override.vm.synced_folder args['local_dir'], args['vm_dir'], :owner => "www-data", :mount_options => ["dir_mode=0775","file_mode=0774","forceuid","noperm","nobrl","mfsymlinks"]
-      end
-    end
-    # Change all the folder to use SMB instead of Virtual Box shares
-    override.vm.synced_folders.each do |id, options|
-      if ! options[:type]
-        options[:type] = "smb"
-      end
-    end
   end
 
   # Customfile - POSSIBLY UNSTABLE
