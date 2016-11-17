@@ -133,12 +133,12 @@ Since version 1.2.0, VVV has used a 64bit version of Ubuntu. Some older CPUs (su
 
 All database usernames and passwords for WordPress installations included by default are:
 
-__User:__ `wp`  
+__User:__ `wp`
 __Password:__ `wp`
 
 All WordPress admin usernames and passwords for WordPress installations included by default are:
 
-__User:__ `admin`  
+__User:__ `admin`
 __Password:__ `password`
 
 MySQL Root:
